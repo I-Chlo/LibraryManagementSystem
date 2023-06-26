@@ -22,8 +22,12 @@
 
 ## IMPORTS
 import os
+import string
+from flask import Response
+
 import mysql.connector
 from dotenv import load_dotenv
+from .SQLErrorChecking import handleSQLErrors
 
 ## LOAD .ENV FILE ##
 load_dotenv()
@@ -42,10 +46,15 @@ def createSQLConnection():
     return conn
 
 
-def db_AddBook(conn, ISBN,TITLE,AUTHOR,DATE,EDITION):
+def db_AddBook(conn, ISBN: string,TITLE: string,AUTHOR: string,DATE: string,EDITION: string) -> Response or bool:
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO Books (ISBN,TITLE,AUTHOR,DATE_PUB,EDITION) VALUES (%s,%s,%s,%s,%s)", (ISBN,TITLE,AUTHOR,DATE,EDITION))
-    conn.commit()
+    try:
+        cursor.execute("INSERT INTO Books (ISBN,TITLE,AUTHOR,DATE_PUB,EDITION) VALUES (%s,%s,%s,%s,%s)",
+                       (ISBN, TITLE, AUTHOR, DATE, EDITION))
+        conn.commit()
+    except mysql.connector.Error as e:
+        return handleSQLErrors(e)
+    return True
 
 def db_RemoveBook(conn, ISBN):
     cursor = conn.cursor()

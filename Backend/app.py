@@ -6,8 +6,9 @@
 
 ## IMPORTS -----
 from flask import Flask, url_for, request, Response
-from MySQL.sql_connector import createSQLConnection, db_AddBook, db_RemoveBook, db_UpdateTitle, db_UpdateEdition, \
+from MySQL.sql_connector import createSQLConnection, db_AddBook, db_RemoveBook, db_UpdateTitle, db_UpdateEdition,\
     db_UpdateDate, db_UpdateAuthor
+from MySQL.SQLErrorChecking import verifyBookPOSTData
 
 ## NOTES / TO-DO
 # Be able to add/delete/update book in system
@@ -50,27 +51,18 @@ def addBook():
         # The data is sent in form-data format and this appears to python as a dictionary of key value pairs
         # e.g. data["ISBN"] = x
         data = request.form
-        if data.__len__() != 0:
-            # We now need to check that the data at least contains an ISBN, that it converts into a valid number and is 13 characters long
-            if data["ISBN"]:
-                try:
-                    int(data["ISBN"])
-                    if len(data["ISBN"]) == 13:
-                        db_AddBook(conn, data['ISBN'], data['TITLE'], data['AUTHOR'], data['DATE'], data['EDITION'])
-                    else:
-                        # The ISBN wasn't the correct length - therefore we tell the use
-                        return Response("ISBN Wrong length. L", status=400)
-                except Exception as e:
-                    # The ISBN cannot be converted into an int and is therefore not valid
-                    return Response("ISBN invalid <- Only integers allowed in ISBN.\nException: " + str(e), status=400)
-            else:
-                # ISBN doesn't exist <- we need to inform the user
-                return Response("No ISBN = No Bueno", status=400)
+        if isinstance(verifyBookPOSTDataReturn := verifyBookPOSTData(data), Response):
+            return verifyBookPOSTDataReturn
         else:
-            # Nothing was sent in the POST request, so we need to send an angry letter back to the user.
-            return Response("You didn't submit any data to the server. L + Ratio + No Data + Teapot", status=418)
+            if isinstance(db_AddBookResponse := db_AddBook(conn, data['ISBN'], data['TITLE'], data['AUTHOR'], data['DATE'], data['EDITION']), Response):
+                # DATA data is good so we can continue
+                return db_AddBookResponse
+            else:
+                # The data was addedd successfully to the server - This is seperate incase I want to chain an event to this process.
+                return Response("'" + data['TITLE'] + " by " + data['AUTHOR'] + "' successfully added to collection")
 
-    return '<h1>Hello, World!</h1>'
+    return Response(status=418)
+
 
 
 if __name__ == "__main__":
