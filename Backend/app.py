@@ -6,9 +6,9 @@
 
 ## IMPORTS -----
 from flask import Flask, url_for, request, Response
-from MySQL.sql_connector import createSQLConnection, db_AddBook, db_RemoveBook, db_UpdateTitle, db_UpdateEdition,\
+from MySQL.sql_connector import createSQLConnection, db_AddBook, db_DeleteBook, db_UpdateTitle, db_UpdateEdition,\
     db_UpdateDate, db_UpdateAuthor
-from MySQL.SQLErrorChecking import verifyBookPOSTData
+from MySQL.SQLErrorChecking import verifyBookAddPOSTData, verifyBookDeletePOSTData
 
 ## NOTES / TO-DO
 # Be able to add/delete/update book in system
@@ -51,8 +51,8 @@ def addBook():
         # The data is sent in form-data format and this appears to python as a dictionary of key value pairs
         # e.g. data["ISBN"] = x
         data = request.form
-        if isinstance(verifyBookPOSTDataReturn := verifyBookPOSTData(data), Response):
-            return verifyBookPOSTDataReturn
+        if isinstance(verifyBookAddPOSTDataReturn := verifyBookAddPOSTData(data), Response):
+            return verifyBookAddPOSTDataReturn
         else:
             if isinstance(db_AddBookResponse := db_AddBook(conn, data['ISBN'], data['TITLE'], data['AUTHOR'], data['DATE'], data['EDITION']), Response):
                 # DATA data is good so we can continue
@@ -62,6 +62,26 @@ def addBook():
                 return Response("'" + data['TITLE'] + " by " + data['AUTHOR'] + "' successfully added to collection")
 
     return Response(status=418)
+
+
+
+@app.route('/api/Book/delete', methods=['POST','GET'])
+def deleteBook():
+    # This methods deletes books from the MySQL databse
+    # The user will provide a ISBN number and this will be used as the index for the book in the database
+    if request.method == "POST":
+
+        data = request.form
+        if isinstance(verifyBookDeletePOSTDataReturn := verifyBookDeletePOSTData(data), Response):
+            return verifyBookDeletePOSTDataReturn
+        else:
+            # The request is valid so we now need to delete the book from the database
+            if isinstance(db_DeleteBookResponse := db_DeleteBook(conn, data['ISBN']), Response):
+                # Return the error to the user
+                return db_DeleteBookResponse
+            else:
+                # The Book has been successfully deleted
+                return Response("'" + data['TITLE'] + " by " + data['AUTHOR'] + "' successfully deleted from collection")
 
 
 

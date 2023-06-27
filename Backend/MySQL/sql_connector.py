@@ -56,7 +56,7 @@ def db_AddBook(conn, ISBN: string,TITLE: string,AUTHOR: string,DATE: string,EDIT
         return handleSQLErrors(e)
     return True
 
-def db_RemoveBook(conn, ISBN):
+def db_DeleteBook(conn, ISBN):
     cursor = conn.cursor()
     cursor.execute("DELETE FROM Books WHERE ISBN = %s", (ISBN,))
     conn.commit()

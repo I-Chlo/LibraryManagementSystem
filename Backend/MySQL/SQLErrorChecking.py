@@ -10,30 +10,30 @@ from flask import Response
 import datetime
 import string
 
-def _verifyBookTITLE(title):
+def _verifyBookTITLE(title: string) -> Response or bool :
     if len(title) > 100:
         return Response("Book TITLE too long.", status=400)
     else:
         return True
-def _verifyBookAUTHOR(author):
+def _verifyBookAUTHOR(author: string) -> Response or bool:
     if len(author) > 255:
         return Response("Book AUTHOR too long.", status=400)
     else:
         return True
 
-def _verifyBookEDITION(edition):
+def _verifyBookEDITION(edition: string) -> Response or bool:
     if len(edition) > 45:
         return Response("Book EDITION too long.", status=400)
     else:
         return True
 
-def _verifyBookDATE(date):
+def _verifyBookDATE(date: string) -> Response or bool:
     try:
         date = datetime.datetime.strptime("2023-06-25", "%Y-%m-%d")
         return True
     except Exception as e:
         return Response("Book DATE is in the wrong format: ERR: " + e, status=400)
-def _verifyBookISBN(isbn):
+def _verifyBookISBN(isbn: string) -> Response or bool:
     try:
         int(isbn)
         if len(isbn) == 13:
@@ -46,7 +46,7 @@ def _verifyBookISBN(isbn):
         # Return if the ISBN is not an integer value
         return Response("ISBN invalid <- Only integers allowed in ISBN.\nException: " + str(e), status=400)
 
-def verifyBookPOSTData(data):
+def verifyBookAddPOSTData(data: dict) -> Response or bool:
     if data.__len__() != 0:
 
         # We now need to check that the data at least contains an ISBN, that it converts into a valid number and is 13 characters long
@@ -103,6 +103,25 @@ def verifyBookPOSTData(data):
     else:
         # Nothing was sent in the POST request, so we need to send an angry letter back to the user.
         return Response("You didn't submit any data to the server. L + Ratio + No Data + Teapot", status=418)
+
+
+def verifyBookDeletePOSTData(data: dict) -> Response or bool:
+    # Check that data isn't empty
+    if data.__len__() != 0:
+        # Verify the ISBN
+        if not data['ISBN']:
+            # ISBN doesn't exist <- we need to inform the user
+            return Response("No ISBN = No Bueno", status=400)
+    else:
+                # Run the ISBN checking method and if it returns a Response object then return it to the user else return True
+                if isinstance(bookISBNVerifyReturn := _verifyBookISBN(data['ISBN']), Response):
+                    # Return if the ISBN isn't valid
+                    return bookISBNVerifyReturn
+
+                else:
+                    # The ISBN is valid
+                    return True
+
 
 
 def handleSQLErrors(exp: Exception) -> Response:
